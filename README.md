@@ -1,40 +1,68 @@
-# IoT Bit‑plane Compression Demo
 
-This project demonstrates a lightweight, lossless compression framework for continuous IoT sensor data. It leverages FP16 encoding with bit‑plane disaggregation (at the *bit* level), dense bit‑packing, and 4 KB block compression using LZ4 or Zstandard. A Streamlit dashboard provides real‑time visualization of sensor data, detailed compression metrics, network simulation (bandwidth throttle and packet loss), and CSV data export.
+# IoT Bit-Plane Compression Demo
+
+A lightweight, lossless compression framework for continuous IoT sensor streams using FP16 bit-plane disaggregation, dense bit-packing, and 4 KB block compression (LZ4/Zstandard). A Streamlit dashboard enables real-time visualization, compression metrics, network simulation, and CSV export.
+
+---
+
+## Table of Contents
+
+- [IoT Bit-Plane Compression Demo](#iot-bit-plane-compression-demo)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Running the Sender](#running-the-sender)
+    - [Running the Dashboard](#running-the-dashboard)
+  - [How It Works](#how-it-works)
+  - [Results \& Demonstration](#results--demonstration)
+
+---
 
 ## Features
 
-- **Bit‑plane Disaggregation**: Splits each FP16 value into 16 bit‑planes and packs bits with `np.packbits`.
-- **4 KB Block Compression**: Each packed plane is split into 4 KB blocks (or a single block if smaller) and compressed.
-- **Multi‑Sensor Simulation**: Emulates temperature and humidity data.
-- **Real‑Time Dashboard**: Visualizes sensor data, overall and per‑plane compression ratios, latencies, and network conditions.
-- **CSV Download**: Export recovered sensor data as CSV.
+- **Bit-Plane Disaggregation**  
+  Splits each FP16 sample into 16 separate bit-planes and packs bits with NumPy’s `packbits`.  
+- **4 KB Block Compression**  
+  Divides each packed bit-plane into 4 KB blocks (or one block if smaller) and compresses using LZ4 or Zstandard.  
+- **Multi-Sensor Simulation**  
+  Generates synthetic temperature and humidity streams for demonstration.  
+- **Secure, Framed Transport**  
+  Uses a hybrid RSA-OAEP/AES-Fernet scheme and length-prefixed framing over TCP.  
+- **Interactive Dashboard**  
+  Streamlit UI with controls for history window, bit-planes, codec, bandwidth throttle, and packet-loss simulation.  
+- **Metrics & Export**  
+  Live chart of reconstructed values, overall and per-plane compression ratios, latency and energy stats, plus CSV download.
+
+---
 
 ## Requirements
 
-- Python 3.7+
-- Packages: `numpy`, `lz4`, `zstandard`, `streamlit`
+- **Python**: 3.7 or newer  
+- **Dependencies**:  
+  ```bash
+  pip install numpy lz4 zstandard streamlit cryptography
+  ```
+
+---
 
 ## Installation
 
-1. Clone the repository:
-
+1. Clone the repository:  
    ```bash
    git clone https://github.com/yourusername/iot-bitplane-compression.git
    cd iot-bitplane-compression
    ```
+2. Install the required Python packages (see [Requirements](#requirements)).
 
-2. Install dependencies:
-
-   ```bash
-   pip install numpy lz4 zstandard streamlit
-   ```
+---
 
 ## Usage
 
 ### Running the Sender
 
-Start the sender (which simulates sensor data, converts it to FP16, disaggregates into bit‑planes, packs and compresses the data, then serves it over TCP):
+The sender simulates sensor data, applies FP16 conversion, bit-plane packing, block compression, encryption, and serves frames over TCP.
 
 ```bash
 python pi_offline_sender.py
@@ -42,20 +70,48 @@ python pi_offline_sender.py
 
 ### Running the Dashboard
 
-1. Edit `ui_dashboard.py` and set `PI_HOST` to your sender's IP address.
-2. Run the dashboard with Streamlit:
-
+1. Open `ui_dashboard.py` and set `PI_HOST` to the sender’s IP address.  
+2. Launch Streamlit:  
    ```bash
    streamlit run ui_dashboard.py
    ```
+3. Use the sidebar to:
+   - Adjust the time-window for displayed data  
+   - Select how many bit-planes to fetch  
+   - Choose compression codec (LZ4, Zstd, or none)  
+   - Simulate network bandwidth limits and packet loss  
+   - Toggle auto-refresh or fetch manually  
+   - Download reconstructed data as CSV  
 
-Use the sidebar controls to adjust the history window, bit‑planes requested, codec, bandwidth throttle, and packet‑loss simulation. The dashboard displays a live sensor stream, detailed compression statistics, and provides a CSV download option for the recovered data.
-
-A demo video is here https://drive.google.com/file/d/1etdjNjO-VFhYkczx4EUn0cCFB4SHXUjU/view?usp=sharing.
+---
 
 ## How It Works
 
-1. **Acquisition & FP16 Conversion**: Sensor data (e.g., temperature and humidity) is sampled and converted to FP16.
-2. **Bit‑plane Disaggregation & Packing**: Each FP16 value is split into its 16 bits. Bits from the same position across samples are densely packed.
-3. **4 KB Block Compression**: Packed bit‑planes are divided into 4 KB blocks (or one block if smaller) and compressed.
-4. **Reconstruction & Visualization**: The dashboard fetches the compressed data, decompresses and unpacks the bits, reconstructs FP16 values, and visualizes the data along with compression metrics.
+1. **Data Acquisition & FP16 Conversion**  
+   Sensor readings (e.g., temperature, humidity) are sampled at a fixed rate and converted from 32-bit floats to IEEE-754 half-precision (FP16).
+
+2. **Bit-Plane Disaggregation & Packing**  
+   Each 16-bit FP16 value is split into its individual bits. Bits from the same position across a batch of samples are densely packed into byte arrays.
+
+3. **4 KB Block Compression**  
+   Packed bit-plane arrays are segmented into 4 KB chunks (or retained as a single block) and compressed with the chosen codec.
+
+4. **Secure Framing & Transmission**  
+   - A fresh AES-128 (Fernet) key is generated per batch and encrypted with RSA-OAEP for secure key exchange.  
+   - The encrypted key and compressed payload are each length-prefixed and sent over TCP.
+
+5. **Reconstruction & Visualization**  
+   The dashboard:
+   - Receives and decrypts the AES key, then the payload  
+   - Decompresses each bit-plane block and unpacks bits  
+   - Reassembles 16-bit words into FP16 values (converted back to float32)  
+   - Displays live charts, compression stats, latency, and energy metrics
+
+---
+
+## Results & Demonstration
+
+- **Compression Ratio**: Up to 2.13× for large batches (≈50 % size reduction) compared to monolithic LZ4 on raw FP16.  
+
+- Watch the demo video:  
+https://drive.google.com/file/d/1etdjNjO-VFhYkczx4EUn0cCFB4SHXUjU/view?usp=sharing
