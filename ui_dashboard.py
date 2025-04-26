@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""
-Streamlit dashboard for FP-16 bit-plane demo (4  KB blocks, bit-level packing).
-• Fetches compressed segments, decompresses, unpacks bits,
-  concatenates per-plane bits across segments, reconstructs FP16 values
-• Shows live chart, overall + per-plane ratios, latencies
-• Simulates bandwidth throttle & packet loss
-• CSV download (unique key each refresh)
-"""
+
 import json, socket, struct, time, random
 from datetime import datetime, timedelta
 import numpy as np, pandas as pd
@@ -18,6 +11,7 @@ import iot_proj_crypto
 PI_HOST = "127.0.0.1"      # ← your Pi IP
 PORT    = 50007
 
+# simple socket based receiver
 def recvall(sock,n):
     buf=bytearray()
     while len(buf)<n:
@@ -26,6 +20,7 @@ def recvall(sock,n):
         buf.extend(chunk)
     return buf
 
+# Choose the correct decompressors
 def decompress(block, hdr):
     if hdr["algo"]=="lz4":
         try:
@@ -107,6 +102,7 @@ with st.sidebar:
 chart = st.empty(); stats = st.empty(); table = st.expander("Per-plane",False)
 hist  = pd.DataFrame()
 
+# Creates a history which is later used for delay
 def push(arr,names):
     global hist
     hist = pd.DataFrame()
@@ -118,6 +114,7 @@ def push(arr,names):
     threshold = hist.index.max() - pd.Timedelta(seconds=seconds)
     hist = hist.loc[hist.index >= threshold]
 
+# Allows downloading fetched results as csv
 def csv_dl():
     csv_box.empty()
     csv=hist.to_csv(index_label="timestamp")
