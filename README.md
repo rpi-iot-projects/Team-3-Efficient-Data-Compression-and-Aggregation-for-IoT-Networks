@@ -10,7 +10,8 @@ A lightweight, lossless compression framework for continuous IoT sensor streams 
 - [IoT Bit-Plane Compression Demo](#iot-bit-plane-compression-demo)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
-  - [Requirements](#requirements)
+  - [Hardware Components](#hardware-components)
+  - [Software and Dependencies](#requirements)
   - [Installation](#installation)
   - [Usage](#usage)
     - [Running the Sender](#running-the-sender)
@@ -36,8 +37,16 @@ A lightweight, lossless compression framework for continuous IoT sensor streams 
   Live chart of reconstructed values, overall and per-plane compression ratios, latency and energy stats, plus CSV download.
 
 ---
+## Hardware Components
 
-## Requirements
+- **Raspberry Pi**
+  The more the merrier. Can connect to the central server.
+- **Laptop**
+  Usual, run of the mill laptop with a browser.
+- **Sensors**
+  Any variety of sensors that can be interfaced with Raspberry Pi. E.g., BME280 for humidity and TMP36 for temperature etc. 
+
+## Software and Dependencies
 
 - **Python**: 3.7 or newer  
 - **Dependencies**:  
@@ -51,8 +60,8 @@ A lightweight, lossless compression framework for continuous IoT sensor streams 
 
 1. Clone the repository:  
    ```bash
-   git clone https://github.com/yourusername/iot-bitplane-compression.git
-   cd iot-bitplane-compression
+   git clone https://github.com/rpi-iot-projects/Team-3-Efficient-Data-Compression-and-Aggregation-for-IoT-Networks.git
+   cd Team-3-Efficient-Data-Compression-and-Aggregation-for-IoT-Networks.git
    ```
 2. Install the required Python packages (see [Requirements](#requirements)).
 
@@ -97,8 +106,10 @@ python pi_offline_sender.py
    Packed bit-plane arrays are segmented into 4 KB chunks (or retained as a single block) and compressed with the chosen codec.
 
 4. **Secure Framing & Transmission**  
+   - Raspberry Pi based collector nodes run a key sharing server, that can share AES key upon request using a public RSA key.
    - A fresh AES-128 (Fernet) key is generated per batch and encrypted with RSA-OAEP for secure key exchange.  
    - The encrypted key and compressed payload are each length-prefixed and sent over TCP.
+   - An update of AES key can be requested by the central control/deashboard at any time. This allows for a robustly secure, yet fast encryption framework.
 
 5. **Reconstruction & Visualization**  
    The dashboard:
