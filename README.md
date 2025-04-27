@@ -123,6 +123,3 @@ python pi_offline_sender.py
 ## Results & Demonstration
 
 - **Compression Ratio**: Up to 2.13× for large batches (≈50 % size reduction) compared to monolithic LZ4 on raw FP16.  
-
-- Watch the demo video:  
-https://drive.google.com/file/d/1etdjNjO-VFhYkczx4EUn0cCFB4SHXUjU/view?usp=sharing
